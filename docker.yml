@@ -1,0 +1,55 @@
+
+- hosts: TARGETS
+  tasks:
+  - name: Mount DVD read-only
+    mount:
+      path: /mnt
+      src: /dev/sr0
+      fstype: iso9660
+      opts: ro,noauto
+      state: mounted
+  - name: Setting up the YUM CONFIG file for Docker
+    yum_repository:
+      name: docker
+      description: Docker conf file
+      baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+      gpgcheck: no
+  - name: Install PIP for Docker ...
+    package:
+      name: python36
+      state: latest
+  - name: Installing Docker SDK...
+    pip:
+      name: docker
+      state: latest
+  - name: Configuring DOCKER...
+    command: "yum install docker-ce --nobest -y"
+    changed_when: false
+  - name: Starting DOCKER SERVICE  
+    service:
+      name: docker
+      state: started
+  - name: Disabling Firewall
+    service:
+      name: firewalld
+      state: stopped
+  - name: Pulling HTTPD Docker Image
+    docker_image:
+      name: httpd
+      source: pull
+  - name : Creating directory/ document root for container
+    file:
+      path: /docroot
+      state: directory
+  - name: Copying file into diretory of document root
+    copy:
+      src: "/var/www/html/index.html"
+      dest: "/docroot"
+  - name: Launching Docker Container and Configuring webserver on it...
+    docker_container:
+      name: myc1
+      image: httpd
+      state: started
+      exposed_ports: "80"
+      ports: "8288:80"
+      volumes: "/docroot:/usr/local/apache2/htdocs/"
