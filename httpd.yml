@@ -1,0 +1,23 @@
+- hosts: MASTER_NODE
+  tasks:
+  - name: Mount DVD read-only
+    mount:
+      path: /mnt
+      src: /dev/sr0
+      fstype: iso9660
+      opts: ro,noauto
+      state: mounted
+  - name: Copy data into document root
+    copy:
+      dest: "/var/www/html/index.html"
+      content: "HELLO EVERYBODY!! WELCOME TO WORLD OF HADOOP!!"
+    notify: webserver
+  handlers:
+  - name: webserver
+    service:
+      name: httpd
+      state: restarted
+  - debug:
+      msg: "TEST" 
+        
+  
