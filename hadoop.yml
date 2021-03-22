@@ -1,0 +1,158 @@
+- hosts: MASTER_NODE
+  vars_prompt:
+    - name: Nano_dir
+      private: no
+      prompt: "Enter the directory for NAMENODE"
+  tasks:
+  - name: Installing JDK on Master ...
+    command: "rpm -i  /jdk-8u171-linux-x64.rpm "
+    ignore_errors: yes
+  - name: Installing Hadoop on Master...
+    command: "rpm -i /hadoop-1.2.1-1.x86_64.rpm --force"
+    ignore_errors: yes
+  - name: Creating NameNode Directory
+    file:
+      path: "{{ Nano_dir }}"
+      state: directory
+  - name: Disabling Firewall
+    service:
+      name: firewalld
+      state: stopped
+  - name: Configuring hdfs-site.xml file for NAMENODE
+    lineinfile:
+      path: "/etc/hadoop/hdfs-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>dfs.name.dir</name>
+       \n<value>{{ Nano_dir}}</value>
+       \n</property>"
+  - name: Configuring core-site.xml file for NAMENODE
+    lineinfile:
+      path: "/etc/hadoop/core-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>fs.default.name</name>
+       \n<value>hdfs://{{ groups['MASTER_NODE'][0] }}:9001</value>
+       \n</property>"
+  - name: Formatting the Directory of NAMENODE
+    command: "hadoop namenode -format -force"
+    ignore_errors: yes
+  - name: Starting NAMENODE Service
+    command: "hadoop-daemon.sh start namenode"
+    ignore_errors: yes
+    register: x
+  - command: "jps"
+    when: x.rc==0
+    register: y
+  - debug:
+      var: y
+    when: y.rc==0
+
+- hosts: SLAVE_NODE1
+  vars_prompt:
+    - name: Dano_dir1
+      private: no
+      prompt: "Enter the directory for DATANODE1"
+  tasks:
+  - name: Copying JDK file in DATANODE1
+    copy:
+      src: /jdk-8u171-linux-x64.rpm 
+      dest: /root
+  - name:  Copying Hadoop file in DATANODE1
+    copy:
+      src:  /hadoop-1.2.1-1.x86_64.rpm
+      dest: /root
+
+  - name: Installing JDK on DATANODE1...
+    command: "rpm -i  jdk-8u171-linux-x64.rpm "
+    ignore_errors: yes
+  - name: Installing Hadoop on DATANODE1...
+    command: "rpm -i  hadoop-1.2.1-1.x86_64.rpm --force"
+    ignore_errors: yes
+  - name: Creating DATANODE1 Directory
+    file:
+      path: "{{ Dano_dir1 }}"
+      state: directory
+  - name: Configuring hdfs-site.xml file for DATANODE1
+    lineinfile:
+      path: "/etc/hadoop/hdfs-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>dfs.data.dir</name>
+       \n<value>{{ Dano_dir1}}</value>
+       \n</property>"
+  - name: Configuring core-site.xml file for DATANODE1
+    lineinfile:
+      path: "/etc/hadoop/core-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>fs.default.name</name>
+       \n<value>hdfs://{{ groups['MASTER_NODE'][0] }}:9001</value>
+       \n</property>"
+  - name: Starting DATANODE1 Service
+    command: "hadoop-daemon.sh start datanode"
+    ignore_errors: yes
+    register: a
+  - command: "jps"
+    when: a.rc==0
+    register: b
+  - debug:
+      var: b
+    when: b.rc==0
+
+- hosts: SLAVE_NODE2
+  vars_prompt:
+    - name: Dano_dir2
+      private: no
+      prompt: "Enter the directory for DATANODE2"
+  tasks:
+  - name: Copying JDK file in DATANODE2
+    copy:
+      src: /jdk-8u171-linux-x64.rpm
+      dest: /root
+  - name:  Copying Hadoop file in DATANODE2
+    copy:
+      src:  /hadoop-1.2.1-1.x86_64.rpm
+      dest: /root
+
+  - name: Installing JDK on DATANODE2...
+    command: "rpm -i  jdk-8u171-linux-x64.rpm "
+    ignore_errors: yes
+  - name: Installing Hadoop on DATANODE2...
+    command: "rpm -i  hadoop-1.2.1-1.x86_64.rpm --force"
+    ignore_errors: yes
+  - name: Creating DATANODE2 Directory
+    file:
+      path: "{{ Dano_dir2 }}"
+      state: directory
+  - name: Configuring hdfs-site.xml file for DATANODE2
+    lineinfile:
+      path: "/etc/hadoop/hdfs-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>dfs.data.dir</name>
+       \n<value>{{ Dano_dir2}}</value>
+       \n</property>"
+  - name: Configuring core-site.xml file for DATANODE2
+    lineinfile:
+      path: "/etc/hadoop/core-site.xml"
+      insertafter: "<configuration>"
+      line: "<property>
+       \n<name>fs.default.name</name>
+       \n<value>hdfs://{{ groups['MASTER_NODE'][0] }}:9001</value>
+       \n</property>"
+  - name: Starting DATANODE2 Service
+    command: "hadoop-daemon.sh start datanode"
+    ignore_errors: yes
+    register: p
+  - command: "jps"
+    when: p.rc==0
+    register: q
+  - debug:
+     var: q
+    when: q.rc==0
+  - command: "hadoop dfsadmin -report"
+    register: r
+  - debug:
+      var: r
+    when: r.rc==0
